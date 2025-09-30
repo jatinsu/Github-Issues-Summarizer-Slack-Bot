@@ -8,12 +8,9 @@ load_dotenv()
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_CHANNEL_ID = os.environ.get("SLACK_CHANNEL_ID")
 SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
-
-# Initializes your app with your bot token and socket mode handler
 app = App(token=SLACK_BOT_TOKEN)
 
-
-@app.message(compile("Issue created by"))
+@app.message("Issue created by")
 def handle_message_im(say):
     say(f"This is a github pull request")
 
