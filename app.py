@@ -1,7 +1,6 @@
 import os
 from slack_bolt import App
 from dotenv import load_dotenv
-# import re
 import requests
 import json
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -11,14 +10,19 @@ SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_CHANNEL_ID = os.environ.get("SLACK_CHANNEL_ID")
 SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
 GH_TOKEN = os.environ.get("GH_TOKEN")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 app = App(token=SLACK_BOT_TOKEN)
 
 @app.message("testing for slack bot")
 def say_hello(say):
     say(f"Hello world")
 
+def summarize_github_issue(github_issue_body):
+    # summarize the github issue body using the github issue body using gemini api
+    return github_issue_body
+
 @app.event("message")
-def handle_message_im(message, say):
+def github_issue_message(message, say):
     # check if the message is from github bot
     if 'bot_id' not in message:
         return
@@ -39,10 +43,8 @@ def handle_message_im(message, say):
         github_issue_body = response.json().get("body", "")
     else:
         github_issue_body = f"Failed to fetch issue body: {response.status_code}"
+    
     say(f"{github_issue_body}")
-    # issue_message = message['attachments'][0]['text']
-    # say(f"The message is {issue_message}")
-
     
 if __name__ == "__main__":
     SocketModeHandler(app, SLACK_APP_TOKEN).start()
