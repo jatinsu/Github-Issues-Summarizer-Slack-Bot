@@ -3,6 +3,8 @@ from slack_bolt import App
 from dotenv import load_dotenv
 import requests
 import json
+from google import genai
+from google.genai import types
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 load_dotenv()   
@@ -19,10 +21,18 @@ def say_hello(say):
 
 def summarize_github_issue(github_issue_body):
     # summarize the github issue body using the github issue body using gemini api
-    return github_issue_body
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=github_issue_body,
+        config=types.GenerateContentConfig(
+            system_instruction=open("prompts/single_sentence.txt", "r").read()
+        )
+    )
+    return response.text
 
 @app.event("message")
-def github_issue_message(message, say):
+def github_issue_message(message, say, client):
     # check if the message is from github bot
     if 'bot_id' not in message:
         return
@@ -44,7 +54,16 @@ def github_issue_message(message, say):
     else:
         github_issue_body = f"Failed to fetch issue body: {response.status_code}"
     
-    say(f"{github_issue_body}")
     
+    loading_summary_message = say(f"Loading Summary")
+
+    summarized_github_issue_body = summarize_github_issue(github_issue_body)
+    
+    client.chat_update(
+        channel=loading_summary_message['channel'],
+        ts=loading_summary_message['ts'],
+        text=f"{summarized_github_issue_body}"
+    )
+
 if __name__ == "__main__":
     SocketModeHandler(app, SLACK_APP_TOKEN).start()
