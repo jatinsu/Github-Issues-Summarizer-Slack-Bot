@@ -2,6 +2,7 @@ import os
 from slack_bolt import App
 from dotenv import load_dotenv
 # import re
+import requests
 import json
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
@@ -9,6 +10,7 @@ load_dotenv()
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_CHANNEL_ID = os.environ.get("SLACK_CHANNEL_ID")
 SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
+GH_TOKEN = os.environ.get("GH_TOKEN")
 app = App(token=SLACK_BOT_TOKEN)
 
 @app.message("testing for slack bot")
@@ -18,16 +20,28 @@ def say_hello(say):
 @app.event("message")
 def handle_message_im(message, say):
     # check if the message is from github bot
-    if message['bot_id'] != "B09GJGSLK4Y":
+    if 'bot_id' not in message:
+        return
+    elif (message['bot_id'] != "B09GJGSLK4Y" or "Issue opened" not in message['attachments'][0]['fallback']):
         print("the message is not from github bot")
         return
 
-    # print the message in the plain text
+    # get the github issue body from the github issue link
     github_issue_link = json.loads(message['attachments'][0]['actions'][0]['value'])['issueHtmlUrl']
-    say(f"The github issue link is {github_issue_link}")
-    issue_message = message['attachments'][0]['text']
-    say(f"The message is {issue_message}")
-    print(f"{json.dumps(message, indent=2)}")
+    converted_github_issue_link = github_issue_link.replace("github.com", "api.github.com/repos")
+
+    headers = {
+        "Accept": "application/vnd.github.v3.raw+json",
+        "Authorization": f"Bearer {GH_TOKEN}"
+    }
+    response = requests.get(converted_github_issue_link, headers=headers)
+    if response.status_code == 200:
+        github_issue_body = response.json().get("body", "")
+    else:
+        github_issue_body = f"Failed to fetch issue body: {response.status_code}"
+    say(f"{github_issue_body}")
+    # issue_message = message['attachments'][0]['text']
+    # say(f"The message is {issue_message}")
 
     
 if __name__ == "__main__":
