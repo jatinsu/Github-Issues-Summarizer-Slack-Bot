@@ -55,7 +55,7 @@ def github_issue_message(message, say, client):
         github_issue_body = f"Failed to fetch issue body: {response.status_code}"
     
     
-    loading_summary_message = say(f"Loading Summary")
+    loading_summary_message = say(f"Loading Summary...")
 
     summarized_github_issue_body = summarize_github_issue(github_issue_body)
     
