@@ -27,6 +27,18 @@ def summarize_github_issue(github_issue_body):
     )
     return response.text
 
+def send_summary_to_slack(data, summarized_issue_body):
+    loading_summary_message = slack_app.client.chat_postMessage(
+        channel=SLACK_CHANNEL_ID,
+        text=f"Loading Summary of issue {data['issue']['title']}..."
+    )
+    full_summary = f"Summary of issue <{data['issue']['html_url']}|{data['issue']['title']}>:\n\n{summarized_issue_body}"
+    slack_app.client.chat_update(
+        channel=loading_summary_message['channel'],
+        ts=loading_summary_message['ts'],
+        text=full_summary
+    )
+
 @flask_app.route('/webhook', methods=['POST'])
 def webhook():    
     try:
@@ -34,21 +46,10 @@ def webhook():
     except:
         return jsonify({'status': 'error'}), 400
     
-    issue_body = data['issue']['body']
-    
     # Summarize the issue body
     if data['action'] == 'opened':
-        loading_summary_message = slack_app.client.chat_postMessage(
-            channel=SLACK_CHANNEL_ID,
-            text=f"Loading Summary of issue {data['issue']['title']}..."
-        )
-        summarized_issue_body = summarize_github_issue(issue_body)
-        full_summary = f"Summary of issue <{data['issue']['html_url']}|{data['issue']['title']}>:\n\n{summarized_issue_body}"
-        slack_app.client.chat_update(
-            channel=loading_summary_message['channel'],
-            ts=loading_summary_message['ts'],
-            text=full_summary
-        )
+        summarized_issue_body = summarize_github_issue(data['issue']['body'])
+        send_summary_to_slack(data, summarized_issue_body)
 
     return jsonify({'status': 'received'}), 200
 

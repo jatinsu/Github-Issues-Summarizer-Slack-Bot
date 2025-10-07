@@ -12,6 +12,6 @@ Include ALL significant content.
 
 DO NOT attempt to solve it or fix it, only summarize the issue
 
-Do this in one sentence
+Do this in one or two sentences
 
 Use markdown as the output format.
